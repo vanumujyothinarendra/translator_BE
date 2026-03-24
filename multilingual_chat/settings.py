@@ -25,9 +25,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-ekqj5cmzsy*%*0)&*&71+*f_05lq4qg#c*5jhb-!6$zs)em52*'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG') == 'True'
+DEBUG = os.environ.get('DEBUG') == 'False'  # ✅ read from env variable
 
-ALLOWED_HOSTS = []
+CSRF_TRUSTED_ORIGINS = [
+    "https://translator-fe.onrender.com"
+]
+
+ALLOWED_HOSTS = [
+    "translator-be-drk5.onrender.com",
+    "translator-fe.onrender.com",  # ✅ add this
+    "localhost",
+    "127.0.0.1"
+]
 
 
 # Application definition
