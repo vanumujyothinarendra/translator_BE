@@ -9,13 +9,12 @@ from django.core.mail import send_mail
 from django.conf import settings
 
 from langdetect import detect
-from googletrans import Translator
+from deep_translator import GoogleTranslator  # ✅ correct import
 
 from .models import Message
 from .serializers import RegisterSerializer, LoginSerializer
 
 
-translator = Translator()
 User = get_user_model()
 
 
@@ -25,12 +24,10 @@ User = get_user_model()
 class RegisterView(APIView):
 
     def post(self, request):
-
         serializer = RegisterSerializer(data=request.data)
 
         if serializer.is_valid():
             serializer.save()
-
             return Response(
                 {"message": "User created successfully"},
                 status=status.HTTP_201_CREATED
@@ -45,13 +42,10 @@ class RegisterView(APIView):
 class LoginView(APIView):
 
     def post(self, request):
-
         serializer = LoginSerializer(data=request.data)
 
         if serializer.is_valid():
-
             user = serializer.validated_data["user"]
-
             refresh = RefreshToken.for_user(user)
 
             return Response({
@@ -63,10 +57,10 @@ class LoginView(APIView):
 
 
 # -------------------------------
-# Translate
+# Translate (✅ FIXED)
 # -------------------------------
 class TranslateView(APIView):
-    
+
     def post(self, request):
 
         text = request.data.get("text")
@@ -79,24 +73,28 @@ class TranslateView(APIView):
             )
 
         try:
-
+            # detect language
             detected_language = detect(text)
 
-            translated = translator.translate(text, dest=target_language)
+            # ✅ FIX: use deep-translator
+            translated_text = GoogleTranslator(
+                source='auto',
+                target=target_language
+            ).translate(text)
 
             # Save only if user is authenticated
             if request.user.is_authenticated:
                 Message.objects.create(
                     user=request.user,
                     original_text=text,
-                    translated_text=translated.text,
+                    translated_text=translated_text,
                     language=target_language
                 )
 
             return Response({
                 "original_text": text,
                 "detected_language": detected_language,
-                "translated_text": translated.text,
+                "translated_text": translated_text,  # ✅ no .text
                 "target_language": target_language
             })
 
@@ -118,7 +116,6 @@ class ForgotPasswordView(APIView):
 
         try:
             user = User.objects.get(email=email)
-
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=404)
 
@@ -154,10 +151,8 @@ class ResetPasswordView(APIView):
             return Response({"error": "Invalid user"}, status=404)
 
         if PasswordResetTokenGenerator().check_token(user, token):
-
             user.set_password(password)
             user.save()
-
             return Response({"message": "Password reset successful"})
 
         return Response({"error": "Invalid token"}, status=400)
